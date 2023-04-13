@@ -3,47 +3,69 @@ const jwt = require('jsonwebtoken')
 
 const app = express()
 
-const manager={
-    id:2,
-    name:"Don Don Sagar",
-    gpin:"yoyoyoy"
-}
+// const manager={
+    
+// }
 const emp={
     id:1,
     name:"Don Sagar",
     gpin:"G101001",
     leave:"available",
     lApplied:false,
-    lApproved:true
+    lApproved:false,
+    rank:"Employee"
 }
+const manager={
+    
+        id:2,
+        name:"Don Don Sagar",
+        gpin:"yoyoyoy",
+        leave:"available",
+        lApplied:false,
+        lApproved:false,
+        rank:"Manager"
+    
+}
+let leaveApplied = false
+
+
 app.listen(9999, ()=>{console.log('server running')})
 
 app.post('/login/emp',(req,res)=>{
-    jwt.sign({emp},'secKey',(err,token)=>{
+    jwt.sign({emp},'secKey',(err,tokenE)=>{
         res.json({
-            token
+            tokenE
         })
     })
 
     
 })
-
 app.post('/login/admin',(req,res)=>{
-    jwt.sign({manager},'secKey',(err,token)=>{
+    jwt.sign({manager},'secKey',(err,tokenM)=>{
         res.json({
-            token
+            tokenM
         })
     })
 
     
 })
-app.get('/getLeave', verifyToken,(req,res)=>{
-    jwt.verify(req.token, 'secKey', (err,data)=>{
+
+// app.post('/login/admin',(req,res)=>{
+//     jwt.sign({manager},'secKey',(err,token)=>{
+//         res.json({
+//             token
+//         })
+//     })
+
+    
+// })
+app.get('/getLeave', verifyTokenE,(req,res)=>{
+    jwt.verify(req.tokenE, 'secKey', (err,data)=>{
         if(err){
             res.sendStatus(403)
         }else{
             res.json({
-                data: data.emp.leave
+                data:data.emp.leave
             })
         }
         
@@ -55,14 +77,15 @@ app.get('/getLeave', verifyToken,(req,res)=>{
     // )
 })
 //Apply Leave
-app.post ('/applyLeave', (req,res)=>{
-    jwt.verify(req.token, 'secKey', (err,data)=>{
+app.post ('/applyLeave', verifyTokenE, (req,res)=>{
+    jwt.verify(req.tokenE, 'secKey', (err,data)=>{
         if(err){
             res.sendStatus(403)
         }else{
-            if (emp.leave=="Available"){
+            if (emp.leave=="available"){
                 data.emp.lApplied =true
                 emp.lApplied=true
+                leaveApplied=true
                 res.json({
                     req_status: emp.lApplied,
                     message:"Applied"
@@ -76,20 +99,41 @@ app.post ('/applyLeave', (req,res)=>{
     
         })})
 
-app.post('/approveLeave', verifyToken, (req,res)=>{
-    // jwt.sign({manager}, "secKey", (err,token)=>{
-    //     res.json({
-    //         token
-    //     })
-    jwt.verify(req.token, 'secKey', (err,data)=>{
+app.post('/approveLeave', verifyTokenM, (req,res)=>{
+    jwt.verify(req.tokenM, 'secKey', (err,data)=>{
         if (err){
             res.sendStatus(403);
 
+        }else{
+            if (manager.rank==="Manager"){ 
+                if (leaveApplied===true){
+                    emp.lApproved=true
+                // data.emp.lApproved=true
+                
+                res.json({
+                    req_status: emp.lApproved,
+                    message: "Leave Approved",
+                    emp
+                })
+                leaveApplied=false
+                }else {
+                    res.json({
+                        message:"Leave not applied"
+                    })
+                }
+        
+                
+            }else {
+                res.json({
+                    message:"Not Manager"
+                })
+            }
+           
         }
     })
 })
 
-function verifyToken(req,res,next){
+function verifyTokenE(req,res,next){
     const bearerHeader = req.headers['authorization']
     // console.log(bearerHeader)
     if (typeof bearerHeader !== 'undefined'){
@@ -97,7 +141,22 @@ function verifyToken(req,res,next){
         const bearer = bearerHeader.split(' ')
         const bearerToken = bearer[1]
 
-        req.token = bearerToken
+        req.tokenE = bearerToken
+       next()
+    }else{
+        res.sendStatus(403)
+    }
+}
+
+function verifyTokenM(req,res,next){
+    const bearerHeader = req.headers['authorization']
+    // console.log(bearerHeader)
+    if (typeof bearerHeader !== 'undefined'){
+
+        const bearer = bearerHeader.split(' ')
+        const bearerToken = bearer[1]
+
+        req.tokenM = bearerToken
        next()
     }else{
         res.sendStatus(403)
